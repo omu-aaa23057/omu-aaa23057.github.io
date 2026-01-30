@@ -115,25 +115,45 @@
 */
 
             // 行政区域レイヤーを作成
-            fetch("./N05-24_Station2.geojson") // 行政区域データを非同期読み込み
-                .then((response) => response.json())
-                .then((data) => {
-                    // 特定の値によりGeoJSONをフィルタリング
-                    var filteredData = data.features.filter(feature => feature.properties.N05_002 === '高野線' ||
-    feature.properties.N05_002 === '南海本線'||
-    feature.properties.N05_002 === '阪和線'||
-    feature.properties.N05_002 === '1号線'||
-    feature.properties.N05_002 === '泉北高速鉄道線'||
-    feature.properties.N05_002 === '阪堺線');
+            fetch("./N05-24_Station2.geojson")
+              .then(r => r.json())
+              .then(data => {
+            
+                const targetLines = ['高野線', '南海本線', '阪和線', '1号線', '泉北高速鉄道線', '阪堺線'];
+            
+                // 路線→色 の対応表（好きに変更OK）
+                const lineColor = {
+                  '高野線': '#d81b60',
+                  '南海本線': '#1e88e5',
+                  '阪和線': '#43a047',
+                  '1号線': '#fb8c00',
+                  '泉北高速鉄道線': '#8e24aa',
+                  '阪堺線': '#6d4c41'
+                };
+            
+                const filtered = data.features.filter(f => targetLines.includes(f.properties.N05_002));
+            
+                const layer = L.geoJSON(filtered, {
+                  pointToLayer: (feature, latlng) => {
+                    const line = feature.properties.N05_002;
+                    const color = lineColor[line] ?? '#333'; // 未定義はグレー
+                    return L.circleMarker(latlng, {
+                      radius: 6,
+                      color: color,       // 枠線
+                      weight: 2,
+                      fillColor: color,   // 塗り
+                      fillOpacity: 0.9
+                    });
+                  },
+                  onEachFeature: (feature, lyr) => {
+                    const p = feature.properties;
+                    lyr.bindPopup(`${p.N05_002}<br>${p.N05_011}`);
+                  }
+                });
+            
+                map.addLayer(layer);
+              });
 
-                     var selected_area = L.geoJSON(filteredData)
-                        .bindPopup(layer => {
-                            const p = layer.feature.properties;
-                            return `${p.N05_002}<br>${p.N05_011}`;
-                        });
-                    
-
-                    map.addLayer(selected_area)
                     // チェックボックス
                     //LayerControl.addOverlay(selected_area, "行政区域")
                     // GeoJSONレイヤに地図がフィットするように表示範囲を自動調整
